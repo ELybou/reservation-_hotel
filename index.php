@@ -1,32 +1,69 @@
 <?php include "conn.php"; ?>
 
 <!DOCTYPE html>
-<html>
+<html lang="fr">
 <head>
-    <title>Hotel Booking</title>
+    <meta charset="UTF-8">
+    <title>Hotel Booking System</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-<h1>Chambres disponibles</h1>
+<header>
+    <h1>Système de réservation d’hôtel</h1>
+    <p>Choisissez une chambre et réservez facilement</p>
+</header>
+
+<section class="container">
+
+<h2>Chambres disponibles</h2>
 
 <?php
-$result = $conn->query("SELECT * FROM rooms WHERE available=1");
+$result = $conn->query("SELECT * FROM rooms WHERE available = 1");
 
-while ($row = $result->fetch_assoc()) {
-    echo "<div class='room'>
-            <h3>Room ".$row['room_number']."</h3>
-            <p>Type: ".$row['type']."</p>
+if ($result && $result->num_rows > 0) {
+    while ($row = $result->fetch_assoc()) {
+?>
 
-            <form method='POST' action='reserve.php'>
-                <input type='hidden' name='room_id' value='".$row['id']."'>
-                <input type='text' name='client_name' placeholder='Votre nom' required>
-                <input type='date' name='date' required>
-                <button type='submit'>Réserver</button>
-            </form>
-          </div>";
+    <div class="room">
+
+        <div class="room-header">
+            <h3>Chambre <?= htmlspecialchars($row['room_number']) ?></h3>
+            <span class="badge">Disponible</span>
+        </div>
+
+        <div class="room-body">
+            <p><strong>Type :</strong> <?= htmlspecialchars($row['type']) ?></p>
+            <p><strong>Prix :</strong> 50 - 120 € / nuit</p>
+            <p><strong>Services :</strong> WiFi, Climatisation, TV</p>
+        </div>
+
+        <form method="POST" action="reserve.php">
+            <input type="hidden" name="room_id" value="<?= $row['id'] ?>">
+
+            <label>Nom du client</label>
+            <input type="text" name="client_name" placeholder="Votre nom" required>
+
+            <label>Date de réservation</label>
+            <input type="date" name="date" required>
+
+            <button type="submit">Réserver maintenant</button>
+        </form>
+
+    </div>
+
+<?php
+    }
+} else {
+    echo "<p class='empty'>Aucune chambre disponible actuellement</p>";
 }
 ?>
+
+</section>
+
+<footer>
+    <p>© 2026 - Hotel Booking System</p>
+</footer>
 
 </body>
 </html>
