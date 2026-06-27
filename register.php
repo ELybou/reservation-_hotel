@@ -31,8 +31,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $insert->bind_param("sss", $full_name, $email, $hashed_password);
 
             if ($insert->execute()) {
-                $message = "Inscription réussie. Vous pouvez maintenant vous connecter.";
-                $message_type = "success";
+                // Connexion automatique après inscription
+                $new_user_id = $conn->insert_id;
+                $_SESSION['user_id'] = $new_user_id;
+                $_SESSION['user_name'] = $full_name;
+                $_SESSION['user_role'] = 'user';
+                header("Location: index.php");
+                exit;
             } else {
                 $message = "Une erreur est survenue lors de l'inscription.";
                 $message_type = "error";

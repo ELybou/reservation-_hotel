@@ -12,7 +12,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $message = "Veuillez saisir votre email et votre mot de passe.";
         $message_type = "error";
     } else {
-        $stmt = $conn->prepare("SELECT id, full_name, password FROM users WHERE email = ?");
+        $stmt = $conn->prepare("SELECT id, full_name, password, role FROM users WHERE email = ?");
         $stmt->bind_param("s", $email);
         $stmt->execute();
         $result = $stmt->get_result();
@@ -22,6 +22,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (password_verify($password, $user['password'])) {
                 $_SESSION['user_id'] = $user['id'];
                 $_SESSION['user_name'] = $user['full_name'];
+                $_SESSION['user_role'] = $user['role'];
                 header("Location: index.php");
                 exit;
             } else {
