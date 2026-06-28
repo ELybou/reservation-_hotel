@@ -6,6 +6,11 @@ if (!isset($_SESSION['user_id'])) {
     exit;
 }
 
+if (isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'admin') {
+    header("Location: admin.php");
+    exit;
+}
+
 // Récupérer les messages de réservation
 $reserve_message = '';
 $reserve_message_type = '';
@@ -160,6 +165,9 @@ $is_admin = isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'admin';
         <?php
         $cart_count = isset($_SESSION['cart']) ? count($_SESSION['cart']) : 0;
         ?>
+        <?php if ($is_admin): ?>
+            <a class="logout-link" style="border: 2px solid #d4af37; background: transparent; color: #d4af37;" href="admin.php">🔑 Admin</a>
+        <?php endif; ?>
         <a class="logout-link" style="border-color:#d4af37; color:#d4af37;" href="panier.php">🛒 Panier (<?= $cart_count ?>)</a>
         <a class="logout-link" href="mes_reservations.php">Mes réservations</a>
         <a class="logout-link" href="profil.php">Mon profil</a>

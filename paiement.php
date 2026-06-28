@@ -63,29 +63,84 @@ $message = "";
 $message_type = "";
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // Simulation de paiement
-    $card_number = trim($_POST['card_number'] ?? '');
-    $expiry = trim($_POST['expiry'] ?? '');
-    $cvc = trim($_POST['cvc'] ?? '');
+    $payment_method = $_POST['payment_method'] ?? 'card';
 
-    if (strlen($card_number) < 16 || strlen($cvc) < 3 || $expiry === '') {
-        $message = "Veuillez entrer des informations de carte valides (simulation).";
-        $message_type = "error";
-    } else {
-        // Mettre à jour le statut
-        $update = $conn->prepare("UPDATE reservations SET status = 'paid' WHERE id IN ($in_clause)");
-        $update->bind_param(str_repeat('i', count($reservation_ids)), ...$reservation_ids);
-        
-        if ($update->execute()) {
-            $_SESSION['reserve_message'] = "Paiement réussi ! Vos réservations sont confirmées.";
-            $_SESSION['reserve_message_type'] = "success";
-            header("Location: mes_reservations.php");
-            exit;
-        } else {
-            $message = "Erreur lors du paiement.";
+    if ($payment_method === 'card') {
+        $card_number = trim($_POST['card_number'] ?? '');
+        $expiry = trim($_POST['expiry'] ?? '');
+        $cvc = trim($_POST['cvc'] ?? '');
+
+        if (strlen($card_number) < 16 || strlen($cvc) < 3 || $expiry === '') {
+            $message = "Veuillez entrer des informations de carte valides (simulation).";
             $message_type = "error";
+        } else {
+            // Mettre à jour le statut en 'paid'
+            $update = $conn->prepare("UPDATE reservations SET status = 'paid', payment_method = 'card', receipt_url = NULL WHERE id IN ($in_clause)");
+            $update->bind_param(str_repeat('i', count($reservation_ids)), ...$reservation_ids);
+            
+            if ($update->execute()) {
+                $_SESSION['reserve_message'] = "Paiement par carte réussi ! Vos réservations sont confirmées.";
+                $_SESSION['reserve_message_type'] = "success";
+                header("Location: mes_reservations.php");
+                exit;
+            } else {
+                $message = "Erreur lors du traitement du paiement.";
+                $message_type = "error";
+            }
+            $update->close();
         }
-        $update->close();
+    } else {
+        // Paiement mobile Bankily ou Sedad
+        $mobile_number = trim($_POST['mobile_number'] ?? '');
+        
+        if (strlen($mobile_number) < 8 || !is_numeric($mobile_number)) {
+            $message = "Veuillez entrer un numéro de téléphone mobile valide (8 chiffres).";
+            $message_type = "error";
+        } elseif (!isset($_FILES['receipt_file']) || $_FILES['receipt_file']['error'] !== UPLOAD_ERR_OK) {
+            $message = "Veuillez importer le reçu de paiement.";
+            $message_type = "error";
+        } else {
+            $file = $_FILES['receipt_file'];
+            $file_ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+            $allowed_exts = ['jpg', 'jpeg', 'png', 'pdf'];
+
+            if (!in_array($file_ext, $allowed_exts)) {
+                $message = "Seuls les fichiers JPG, PNG et PDF sont autorisés pour le reçu.";
+                $message_type = "error";
+            } else {
+                $upload_dir = 'uploads/receipts/';
+                if (!is_dir($upload_dir)) {
+                    mkdir($upload_dir, 0777, true);
+                }
+
+                // Nom unique
+                $new_filename = uniqid('receipt_', true) . '.' . $file_ext;
+                $target_path = $upload_dir . $new_filename;
+
+                if (move_uploaded_file($file['tmp_name'], $target_path)) {
+                    // Mettre à jour avec le reçu et le statut 'pending'
+                    $update = $conn->prepare("UPDATE reservations SET status = 'pending', payment_method = ?, receipt_url = ? WHERE id IN ($in_clause)");
+                    
+                    $types_str = "ss" . str_repeat('i', count($reservation_ids));
+                    $bind_params = array_merge([$payment_method, $target_path], $reservation_ids);
+                    $update->bind_param($types_str, ...$bind_params);
+                    
+                    if ($update->execute()) {
+                        $_SESSION['reserve_message'] = "Reçu de paiement par " . ucfirst($payment_method) . " envoyé avec succès ! Un administrateur va valider votre réservation.";
+                        $_SESSION['reserve_message_type'] = "success";
+                        header("Location: mes_reservations.php");
+                        exit;
+                    } else {
+                        $message = "Erreur lors de l'enregistrement du paiement.";
+                        $message_type = "error";
+                    }
+                    $update->close();
+                } else {
+                    $message = "Une erreur est survenue lors du téléversement du reçu.";
+                    $message_type = "error";
+                }
+            }
+        }
     }
 }
 ?>
@@ -161,23 +216,90 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <div class="alert <?= htmlspecialchars($message_type) ?>"><?= htmlspecialchars($message) ?></div>
         <?php endif; ?>
 
-        <form method="POST">
-            <label>Numéro de carte bancaire (Fictif)</label>
-            <input type="text" name="card_number" placeholder="0000 0000 0000 0000" maxlength="16" required>
+        <form method="POST" enctype="multipart/form-data">
+            <label>Mode de paiement</label>
+            <div style="display: flex; gap: 10px; margin-top: 6px; margin-bottom: 20px; flex-wrap: wrap;">
+                <label style="flex: 1; min-width: 120px; border: 1px solid rgba(255,255,255,0.2); padding: 12px; border-radius: 12px; display: flex; align-items: center; gap: 8px; cursor: pointer; background: rgba(255,255,255,0.08); margin-top: 0; font-size: 0.9rem;">
+                    <input type="radio" name="payment_method" value="card" checked onclick="togglePaymentForm('card')" style="width: auto; margin-top: 0; cursor: pointer;">
+                    💳 Carte
+                </label>
+                <label style="flex: 1; min-width: 120px; border: 1px solid rgba(255,255,255,0.2); padding: 12px; border-radius: 12px; display: flex; align-items: center; gap: 8px; cursor: pointer; background: rgba(255,255,255,0.08); margin-top: 0; font-size: 0.9rem;">
+                    <input type="radio" name="payment_method" value="bankily" onclick="togglePaymentForm('bankily')" style="width: auto; margin-top: 0; cursor: pointer;">
+                    📱 Bankily
+                </label>
+                <label style="flex: 1; min-width: 120px; border: 1px solid rgba(255,255,255,0.2); padding: 12px; border-radius: 12px; display: flex; align-items: center; gap: 8px; cursor: pointer; background: rgba(255,255,255,0.08); margin-top: 0; font-size: 0.9rem;">
+                    <input type="radio" name="payment_method" value="sedad" onclick="togglePaymentForm('sedad')" style="width: auto; margin-top: 0; cursor: pointer;">
+                    📱 Sedad
+                </label>
+            </div>
 
-            <div class="payment-row">
-                <div>
-                    <label>Date d'expiration</label>
-                    <input type="text" name="expiry" placeholder="MM/AA" maxlength="5" required>
-                </div>
-                <div>
-                    <label>CVC</label>
-                    <input type="text" name="cvc" placeholder="123" maxlength="3" required>
+            <!-- Formulaire Carte Bancaire -->
+            <div id="form-card">
+                <label>Numéro de carte bancaire (Fictif)</label>
+                <input type="text" name="card_number" id="card_number_input" placeholder="0000 0000 0000 0000" maxlength="16" required>
+
+                <div class="payment-row">
+                    <div>
+                        <label>Date d'expiration</label>
+                        <input type="text" name="expiry" id="expiry_input" placeholder="MM/AA" maxlength="5" required>
+                    </div>
+                    <div>
+                        <label>CVC</label>
+                        <input type="text" name="cvc" id="cvc_input" placeholder="123" maxlength="3" required>
+                    </div>
                 </div>
             </div>
 
-            <button type="submit">Payer <?= number_format($total_price, 2, ',', ' ') ?> €</button>
+            <!-- Formulaire Mobile Payment (Bankily / Sedad) -->
+            <div id="form-mobile" style="display: none;">
+                <div id="payment-instructions" style="background: rgba(0,0,0,0.2); padding: 15px; border-radius: 12px; margin-bottom: 15px; font-size: 0.9rem; border-left: 4px solid #d4af37; line-height: 1.5; color:#ece4d2;">
+                    <!-- Instructions dynamiques -->
+                </div>
+
+                <label>Votre numéro de téléphone (Compte mobile)</label>
+                <input type="text" name="mobile_number" id="mobile_number_input" placeholder="Ex: 44123456" maxlength="8">
+
+                <label style="margin-top: 15px;">Importer le reçu de transfert (Image ou PDF)</label>
+                <input type="file" name="receipt_file" id="receipt_file_input" accept="image/*,application/pdf" style="padding: 10px; background: rgba(255,255,255,0.08); border: 1px dashed rgba(255,255,255,0.3); border-radius: 12px; color: white; display:block; margin-top: 6px; width:100%;">
+            </div>
+
+            <button type="submit" style="margin-top:25px;">Confirmer le paiement (<?= number_format($total_price, 2, ',', ' ') ?> €)</button>
         </form>
+
+        <script>
+        function togglePaymentForm(method) {
+            const formCard = document.getElementById('form-card');
+            const formMobile = document.getElementById('form-mobile');
+            const instructions = document.getElementById('payment-instructions');
+            const cardInputs = [
+                document.getElementById('card_number_input'), 
+                document.getElementById('expiry_input'), 
+                document.getElementById('cvc_input')
+            ];
+            const mobileInputs = [
+                document.getElementById('mobile_number_input'), 
+                document.getElementById('receipt_file_input')
+            ];
+
+            if (method === 'card') {
+                formCard.style.display = 'block';
+                formMobile.style.display = 'none';
+                cardInputs.forEach(i => i.setAttribute('required', 'true'));
+                mobileInputs.forEach(i => i.removeAttribute('required'));
+            } else {
+                formCard.style.display = 'none';
+                formMobile.style.display = 'block';
+                cardInputs.forEach(i => i.removeAttribute('required'));
+                mobileInputs.forEach(i => i.setAttribute('required', 'true'));
+
+                if (method === 'bankily') {
+                    instructions.innerHTML = "<strong>Instructions Bankily :</strong><br>Veuillez effectuer le transfert de <strong><?= number_format($total_price, 2, ',', ' ') ?> €</strong> vers le numéro marchand Bankily <strong>BPM-HOTEL-552</strong> (ou au <strong>44 00 11 22</strong>). Prenez une capture d'écran du reçu de confirmation de transfert puis importez-la ci-dessous.";
+                } else if (method === 'sedad') {
+                    instructions.innerHTML = "<strong>Instructions Sedad :</strong><br>Veuillez effectuer le transfert de <strong><?= number_format($total_price, 2, ',', ' ') ?> €</strong> vers le compte marchand Sedad <strong>SEDAD-HOTEL-990</strong>. Prenez une capture d'écran du reçu de transfert puis importez-la ci-dessous.";
+                }
+            }
+        }
+        </script>
     </div>
 </section>
 

@@ -97,6 +97,16 @@ if ($check_status && $check_status->num_rows === 0) {
     $conn->query("ALTER TABLE reservations ADD COLUMN status ENUM('pending', 'paid', 'cancelled') DEFAULT 'paid' AFTER num_guests");
 }
 
+$check_receipt = $conn->query("SHOW COLUMNS FROM reservations LIKE 'receipt_url'");
+if ($check_receipt && $check_receipt->num_rows === 0) {
+    $conn->query("ALTER TABLE reservations ADD COLUMN receipt_url VARCHAR(255) DEFAULT NULL AFTER status");
+}
+
+$check_pay_method = $conn->query("SHOW COLUMNS FROM reservations LIKE 'payment_method'");
+if ($check_pay_method && $check_pay_method->num_rows === 0) {
+    $conn->query("ALTER TABLE reservations ADD COLUMN payment_method VARCHAR(50) DEFAULT NULL AFTER receipt_url");
+}
+
 // Table reviews
 $conn->query("CREATE TABLE IF NOT EXISTS reviews (
     id INT AUTO_INCREMENT PRIMARY KEY,

@@ -6,6 +6,11 @@ if (!isset($_SESSION['user_id'])) {
     exit;
 }
 
+if (isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'admin') {
+    header("Location: admin.php");
+    exit;
+}
+
 $message = "";
 $message_type = "";
 
@@ -63,7 +68,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 
 // Récupérer les réservations de l'utilisateur avec statuts et avis existants
 $sql = $conn->prepare("
-    SELECT r.id, r.client_name, r.check_in, r.check_out, r.num_guests, r.status, r.reservation_date, r.created_at, 
+    SELECT r.id, r.client_name, r.check_in, r.check_out, r.num_guests, r.status, r.reservation_date, r.created_at, r.payment_method, r.receipt_url, 
            ro.id AS room_id, ro.room_number, ro.type, ro.price_per_night,
            rev.id AS review_id
     FROM reservations r 
@@ -207,7 +212,13 @@ $result = $sql->get_result();
 
                 <div class="actions-group">
                     <?php if ($status === 'pending'): ?>
-                        <a href="paiement.php?id=<?= $row['id'] ?>" class="btn">Procéder au paiement</a>
+                        <?php if (!empty($row['payment_method']) && !empty($row['receipt_url'])): ?>
+                            <p style="color:#f59e0b; font-weight: 600; font-size: 0.95rem; display: flex; align-items: center; gap: 6px; padding: 10px; background: rgba(245,158,11,0.1); border-radius: 8px; border: 1px solid rgba(245,158,11,0.2); width: 100%;">
+                                ⏳ Reçu <?= ucfirst($row['payment_method']) ?> soumis. En attente de validation admin.
+                            </p>
+                        <?php else: ?>
+                            <a href="paiement.php?id=<?= $row['id'] ?>" class="btn">Procéder au paiement</a>
+                        <?php endif; ?>
                     <?php endif; ?>
 
                     <?php if ($status === 'paid'): ?>

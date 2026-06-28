@@ -6,6 +6,11 @@ if (!isset($_SESSION['user_id'])) {
     exit;
 }
 
+if (isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'admin') {
+    header("Location: admin.php");
+    exit;
+}
+
 $cart = $_SESSION['cart'] ?? [];
 $cart_count = count($cart);
 $total_cart_price = 0;
