@@ -107,82 +107,116 @@ $count_stmt->close();
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mon profil</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="profil.css">
 </head>
 <body>
 
-<header>
-    <h1>Mon profil</h1>
-    <p>Gérez vos informations personnelles</p>
-    <div>
-        <?php if ($is_admin): ?>
-            <a class="logout-link" href="admin.php">Admin</a>
-        <?php endif; ?>
-        <a class="logout-link" href="index.php">Accueil</a>
-        <a class="logout-link" href="mes_reservations.php">Mes réservations</a>
-        <a class="logout-link" href="logout.php">Déconnexion</a>
+<header class="main-header">
+    <div class="header-content">
+        <div class="header-titles">
+            <h1>Mon profil</h1>
+            <p>Gérez vos informations personnelles</p>
+        </div>
+        <nav class="nav-links">
+            <?php if ($is_admin): ?>
+                <a class="logout-link" href="admin.php">Admin</a>
+            <?php endif; ?>
+            <a class="logout-link" href="index.php">Accueil</a>
+            <a class="logout-link" href="mes_reservations.php">Mes réservations</a>
+            <a class="logout-link btn-danger" href="logout.php">Déconnexion</a>
+        </nav>
     </div>
 </header>
 
-<section class="container">
+<main class="container">
 
     <?php if ($message !== ''): ?>
         <div class="alert <?= htmlspecialchars($message_type) ?>"><?= htmlspecialchars($message) ?></div>
     <?php endif; ?>
 
-    <!-- Informations du profil -->
-    <div class="room">
-        <div class="room-header">
-            <h3>Informations personnelles</h3>
+    <div class="profile-grid">
+        
+        <div class="room text-info-card">
+            <div class="room-header">
+                <h3>Informations personnelles</h3>
+            </div>
+            <div class="room-body profile-info">
+                <div class="info-block">
+                    <strong>Nom complet</strong>
+                    <p><?= htmlspecialchars($user['full_name']) ?></p>
+                </div>
+                <div class="info-block">
+                    <strong>Email</strong>
+                    <p><?= htmlspecialchars($user['email']) ?></p>
+                </div>
+                <div class="info-block">
+                    <strong>Membre depuis</strong>
+                    <p><?= htmlspecialchars($user['created_at']) ?></p>
+                </div>
+                <div class="info-block">
+                    <strong>Réservations</strong>
+                    <p class="res-count"><?= $reservation_count ?></p>
+                </div>
+            </div>
         </div>
-        <div class="room-body profile-info">
-            <p><strong>Nom complet :</strong> <?= htmlspecialchars($user['full_name']) ?></p>
-            <p><strong>Email :</strong> <?= htmlspecialchars($user['email']) ?></p>
-            <p><strong>Membre depuis :</strong> <?= htmlspecialchars($user['created_at']) ?></p>
-            <p><strong>Réservations :</strong> <?= $reservation_count ?></p>
+
+        <div class="forms-stack">
+            <div class="room">
+                <div class="room-header">
+                    <h3>Modifier le nom</h3>
+                </div>
+                <div class="room-body">
+                    <form method="POST" class="profile-form">
+                        <input type="hidden" name="action" value="update_name">
+
+                        <div class="form-group">
+                            <label for="full_name">Nouveau nom complet</label>
+                            <input type="text" id="full_name" name="full_name" value="<?= htmlspecialchars($user['full_name']) ?>" required>
+                        </div>
+
+                        <button type="submit">Mettre à jour</button>
+                    </form>
+                </div>
+            </div>
+
+            <div class="room">
+                <div class="room-header">
+                    <h3>Changer le mot de passe</h3>
+                </div>
+                <div class="room-body">
+                    <form method="POST" class="profile-form">
+                        <input type="hidden" name="action" value="change_password">
+
+                        <div class="form-group">
+                            <label>Mot de passe actuel</label>
+                            <input type="password" name="current_password" required>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Nouveau mot de passe</label>
+                                <input type="password" name="new_password" required>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Confirmer le nouveau mot de passe</label>
+                                <input type="password" name="confirm_new_password" required>
+                            </div>
+                        </div>
+
+                        <button type="submit">Changer le mot de passe</button>
+                    </form>
+                </div>
+            </div>
         </div>
+
     </div>
 
-    <!-- Modifier le nom -->
-    <div class="room">
-        <div class="room-header">
-            <h3>Modifier le nom</h3>
-        </div>
-        <form method="POST">
-            <input type="hidden" name="action" value="update_name">
+</main>
 
-            <label>Nouveau nom complet</label>
-            <input type="text" name="full_name" value="<?= htmlspecialchars($user['full_name']) ?>" required>
-
-            <button type="submit">Mettre à jour</button>
-        </form>
-    </div>
-
-    <!-- Changer le mot de passe -->
-    <div class="room">
-        <div class="room-header">
-            <h3>Changer le mot de passe</h3>
-        </div>
-        <form method="POST">
-            <input type="hidden" name="action" value="change_password">
-
-            <label>Mot de passe actuel</label>
-            <input type="password" name="current_password" required>
-
-            <label>Nouveau mot de passe</label>
-            <input type="password" name="new_password" required>
-
-            <label>Confirmer le nouveau mot de passe</label>
-            <input type="password" name="confirm_new_password" required>
-
-            <button type="submit">Changer le mot de passe</button>
-        </form>
-    </div>
-
-</section>
-
-<footer>
+<footer class="main-footer">
     <p>© 2026 - Hotel Booking System</p>
 </footer>
 

@@ -191,7 +191,7 @@ $is_admin = isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'admin';
             </div>
             <div class="search-group">
                 <label>Personnes</label>
-                <input type="number" name="guests" value="<?= $search_guests ?>" min="1" max="10" required>
+                <input type="number" name="guests" value="<?= $search_guests ?>" min="1" required>
             </div>
             <div class="search-group">
                 <label>Type de chambre</label>

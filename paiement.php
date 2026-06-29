@@ -149,41 +149,277 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Paiement Sécurisé</title>
     <link rel="stylesheet" href="style.css">
     <style>
+        :root {
+            --gold-color: #d4af37;
+            --cream-color: #ece4d2;
+            --white-trans: rgba(255, 255, 255, 0.08);
+            --white-trans-hover: rgba(255, 255, 255, 0.15);
+            --border-trans: rgba(255, 255, 255, 0.15);
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+
+        header {
+            text-align: center;
+            padding: 40px 20px 20px;
+        }
+
+        header h1 {
+            font-size: 2.2rem;
+            margin-bottom: 8px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+
+        header p {
+            color: var(--cream-color);
+            opacity: 0.8;
+            margin-top: 0;
+        }
+
+        .logout-link {
+            display: inline-block;
+            margin-top: 15px;
+            text-decoration: none;
+            color: var(--cream-color);
+            font-size: 0.9rem;
+            opacity: 0.7;
+            transition: opacity 0.3s ease;
+        }
+
+        .logout-link:hover {
+            opacity: 1;
+        }
+
         .payment-box {
-            max-width: 500px;
-            margin: 40px auto;
-            background: rgba(255,255,255,0.1);
-            padding: 30px;
-            border-radius: 16px;
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255,255,255,0.2);
+            max-width: 550px;
+            margin: 20px auto 60px;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 40px;
+            border-radius: 24px;
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--border-trans);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
         }
+
+        .payment-box h2 {
+            font-size: 1.4rem;
+            margin-top: 0;
+            margin-bottom: 25px;
+            font-weight: 500;
+            border-bottom: 1px solid var(--border-trans);
+            padding-bottom: 12px;
+        }
+
         .order-summary {
-            background: rgba(0,0,0,0.2);
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 20px;
+            background: rgba(0, 0, 0, 0.25);
+            padding: 20px;
+            border-radius: 16px;
+            margin-bottom: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.03);
         }
+
+        .reservation-item {
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            padding-bottom: 15px;
+            margin-bottom: 15px;
+        }
+
+        .reservation-item:last-child {
+            border-bottom: none;
+            padding-bottom: 0;
+            margin-bottom: 0;
+        }
+
         .order-summary p {
-            margin: 5px 0;
-            color: #ece4d2;
+            margin: 8px 0;
+            color: var(--cream-color);
+            font-size: 0.95rem;
+            display: flex;
+            justify-content: space-between;
         }
+
+        .order-summary p strong {
+            color: white;
+            font-weight: 500;
+        }
+
         .total-amount {
-            font-size: 1.5rem;
-            color: #d4af37;
-            font-weight: bold;
-            margin-top: 10px;
+            font-size: 1.6rem;
+            color: var(--gold-color);
+            font-weight: 600;
+            margin-top: 20px;
             text-align: right;
+            border-top: 1px dashed var(--border-trans);
+            padding-top: 15px;
         }
+
+        .method-label {
+            font-size: 0.95rem;
+            font-weight: 500;
+            margin-bottom: 10px;
+            display: block;
+        }
+
+        .payment-methods-grid {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .method-card {
+            flex: 1;
+            min-width: 130px;
+            border: 1px solid var(--border-trans);
+            padding: 16px 12px;
+            border-radius: 14px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            background: var(--white-trans);
+            font-size: 0.9rem;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            user-select: none;
+        }
+
+        .method-card:hover {
+            background: var(--white-trans-hover);
+            border-color: rgba(255,255,255,0.3);
+            transform: translateY(-2px);
+        }
+
+        .method-card.active {
+            background: rgba(212, 175, 55, 0.15);
+            border-color: var(--gold-color);
+            box-shadow: 0 0 12px rgba(212, 175, 55, 0.2);
+        }
+
+        .method-card input[type="radio"] {
+            display: none;
+        }
+
+        /* Style spécifique pour vos images de paiement */
+        .method-img {
+            width: auto;
+            height: 35px; /* Hauteur fixe idéale pour les logos */
+            object-fit: contain;
+            filter: grayscale(20%);
+            transition: filter 0.3s ease;
+        }
+
+        .method-card.active .method-img {
+            filter: grayscale(0%);
+        }
+
+        /* Formulaires inputs */
+        label:not(.method-card):not(.method-label) {
+            display: block;
+            font-size: 0.85rem;
+            color: var(--cream-color);
+            margin-bottom: 8px;
+            opacity: 0.9;
+        }
+
+        input[type="text"], input[type="file"] {
+            width: 100%;
+            padding: 14px;
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--border-trans);
+            border-radius: 12px;
+            color: white;
+            font-size: 1rem;
+            box-sizing: border-box;
+            margin-bottom: 20px;
+            transition: all 0.3s ease;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: var(--gold-color);
+            background: rgba(0, 0, 0, 0.3);
+            box-shadow: 0 0 8px rgba(212, 175, 55, 0.1);
+        }
+
         .payment-row {
             display: flex;
-            gap: 15px;
+            gap: 16px;
         }
+
         .payment-row > div {
             flex: 1;
+        }
+
+        #payment-instructions {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 18px;
+            border-radius: 14px;
+            margin-bottom: 25px;
+            font-size: 0.9rem;
+            border-left: 4px solid var(--gold-color);
+            line-height: 1.6;
+            color: var(--cream-color);
+        }
+
+        input[type="file"] {
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 2px dashed var(--border-trans);
+            cursor: pointer;
+        }
+        
+        input[type="file"]:hover {
+            border-color: rgba(255,255,255,0.4);
+        }
+
+        button[type="submit"] {
+            width: 100%;
+            padding: 16px;
+            background: var(--gold-color);
+            color: #000;
+            border: none;
+            border-radius: 14px;
+            font-size: 1.05rem;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 15px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(212, 175, 55, 0.3);
+        }
+
+        button[type="submit"]:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(212, 175, 55, 0.4);
+            filter: brightness(1.1);
+        }
+
+        .alert {
+            padding: 14px 18px;
+            border-radius: 12px;
+            margin-bottom: 25px;
+            font-size: 0.95rem;
+            line-height: 1.4;
+        }
+        .alert.error {
+            background: rgba(239, 68, 68, 0.15);
+            border: 1px solid rgba(239, 68, 68, 0.4);
+            color: #fca5a5;
+        }
+        .alert.success {
+            background: rgba(34, 197, 94, 0.15);
+            border: 1px solid rgba(34, 197, 94, 0.4);
+            color: #86efac;
         }
     </style>
 </head>
@@ -193,7 +429,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <h1>Paiement</h1>
     <p>Finalisez votre réservation (Simulation)</p>
     <div>
-        <a class="logout-link" href="index.php">Annuler</a>
+        <a class="logout-link" href="index.php">✕ Annuler et retourner à l'accueil</a>
     </div>
 </header>
 
@@ -202,11 +438,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <h2>Résumé de votre commande</h2>
         <div class="order-summary">
             <?php foreach ($reservations as $res): ?>
-                <div style="border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px; margin-bottom: 10px;">
-                    <p><strong>Client :</strong> <?= htmlspecialchars($res['client_name']) ?></p>
-                    <p><strong>Chambre :</strong> <?= htmlspecialchars($res['room_number']) ?> (<?= htmlspecialchars($res['type']) ?>)</p>
-                    <p><strong>Dates :</strong> <?= date('d/m/Y', strtotime($res['check_in'])) ?> - <?= date('d/m/Y', strtotime($res['check_out'])) ?></p>
-                    <p><strong>Durée :</strong> <?= $res['num_nights'] ?> nuit(s)</p>
+                <div class="reservation-item">
+                    <p><strong>Client :</strong> <span><?= htmlspecialchars($res['client_name']) ?></span></p>
+                    <p><strong>Chambre :</strong> <span><?= htmlspecialchars($res['room_number']) ?> (<?= htmlspecialchars($res['type']) ?>)</span></p>
+                    <p><strong>Dates :</strong> <span><?= date('d/m/Y', strtotime($res['check_in'])) ?> - <?= date('d/m/Y', strtotime($res['check_out'])) ?></span></p>
+                    <p><strong>Durée :</strong> <span><?= $res['num_nights'] ?> nuit(s)</span></p>
                 </div>
             <?php endforeach; ?>
             <div class="total-amount">Total à payer : <?= number_format($total_price, 2, ',', ' ') ?> €</div>
@@ -217,23 +453,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <?php endif; ?>
 
         <form method="POST" enctype="multipart/form-data">
-            <label>Mode de paiement</label>
-            <div style="display: flex; gap: 10px; margin-top: 6px; margin-bottom: 20px; flex-wrap: wrap;">
-                <label style="flex: 1; min-width: 120px; border: 1px solid rgba(255,255,255,0.2); padding: 12px; border-radius: 12px; display: flex; align-items: center; gap: 8px; cursor: pointer; background: rgba(255,255,255,0.08); margin-top: 0; font-size: 0.9rem;">
-                    <input type="radio" name="payment_method" value="card" checked onclick="togglePaymentForm('card')" style="width: auto; margin-top: 0; cursor: pointer;">
-                    💳 Carte
+            <span class="method-label">Mode de paiement</span>
+            <div class="payment-methods-grid">
+                
+                <label class="method-card active" id="label-card">
+                    <input type="radio" name="payment_method" value="card" checked onclick="togglePaymentForm('card')">
+                    <img src="assets/carte.png" alt="Carte" class="method-img">
+                    <span>Carte</span>
                 </label>
-                <label style="flex: 1; min-width: 120px; border: 1px solid rgba(255,255,255,0.2); padding: 12px; border-radius: 12px; display: flex; align-items: center; gap: 8px; cursor: pointer; background: rgba(255,255,255,0.08); margin-top: 0; font-size: 0.9rem;">
-                    <input type="radio" name="payment_method" value="bankily" onclick="togglePaymentForm('bankily')" style="width: auto; margin-top: 0; cursor: pointer;">
-                    📱 Bankily
+                
+                <label class="method-card" id="label-bankily">
+                    <input type="radio" name="payment_method" value="bankily" onclick="togglePaymentForm('bankily')">
+                    <img src="assets/bankily.png" alt="Bankily" class="method-img">
+                    <span>Bankily</span>
                 </label>
-                <label style="flex: 1; min-width: 120px; border: 1px solid rgba(255,255,255,0.2); padding: 12px; border-radius: 12px; display: flex; align-items: center; gap: 8px; cursor: pointer; background: rgba(255,255,255,0.08); margin-top: 0; font-size: 0.9rem;">
-                    <input type="radio" name="payment_method" value="sedad" onclick="togglePaymentForm('sedad')" style="width: auto; margin-top: 0; cursor: pointer;">
-                    📱 Sedad
+                
+                <label class="method-card" id="label-sedad">
+                    <input type="radio" name="payment_method" value="sedad" onclick="togglePaymentForm('sedad')">
+                    <img src="assets/sedad.jpeg" alt="Sedad" class="method-img">
+                    <span>Sedad</span>
                 </label>
+                
             </div>
 
-            <!-- Formulaire Carte Bancaire -->
             <div id="form-card">
                 <label>Numéro de carte bancaire (Fictif)</label>
                 <input type="text" name="card_number" id="card_number_input" placeholder="0000 0000 0000 0000" maxlength="16" required>
@@ -250,20 +492,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </div>
             </div>
 
-            <!-- Formulaire Mobile Payment (Bankily / Sedad) -->
             <div id="form-mobile" style="display: none;">
-                <div id="payment-instructions" style="background: rgba(0,0,0,0.2); padding: 15px; border-radius: 12px; margin-bottom: 15px; font-size: 0.9rem; border-left: 4px solid #d4af37; line-height: 1.5; color:#ece4d2;">
-                    <!-- Instructions dynamiques -->
-                </div>
+                <div id="payment-instructions">
+                    </div>
 
                 <label>Votre numéro de téléphone (Compte mobile)</label>
                 <input type="text" name="mobile_number" id="mobile_number_input" placeholder="Ex: 44123456" maxlength="8">
 
-                <label style="margin-top: 15px;">Importer le reçu de transfert (Image ou PDF)</label>
-                <input type="file" name="receipt_file" id="receipt_file_input" accept="image/*,application/pdf" style="padding: 10px; background: rgba(255,255,255,0.08); border: 1px dashed rgba(255,255,255,0.3); border-radius: 12px; color: white; display:block; margin-top: 6px; width:100%;">
+                <label style="margin-top: 5px;">Importer le reçu de transfert (Image ou PDF)</label>
+                <input type="file" name="receipt_file" id="receipt_file_input" accept="image/*,application/pdf">
             </div>
 
-            <button type="submit" style="margin-top:25px;">Confirmer le paiement (<?= number_format($total_price, 2, ',', ' ') ?> €)</button>
+            <button type="submit">Confirmer le paiement (<?= number_format($total_price, 2, ',', ' ') ?> €)</button>
         </form>
 
         <script>
@@ -271,6 +511,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             const formCard = document.getElementById('form-card');
             const formMobile = document.getElementById('form-mobile');
             const instructions = document.getElementById('payment-instructions');
+            
             const cardInputs = [
                 document.getElementById('card_number_input'), 
                 document.getElementById('expiry_input'), 
@@ -280,6 +521,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 document.getElementById('mobile_number_input'), 
                 document.getElementById('receipt_file_input')
             ];
+
+            // Gestion de l'état actif visuel
+            document.querySelectorAll('.method-card').forEach(card => card.classList.remove('active'));
+            document.getElementById('label-' + method).classList.add('active');
 
             if (method === 'card') {
                 formCard.style.display = 'block';
@@ -293,9 +538,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 mobileInputs.forEach(i => i.setAttribute('required', 'true'));
 
                 if (method === 'bankily') {
-                    instructions.innerHTML = "<strong>Instructions Bankily :</strong><br>Veuillez effectuer le transfert de <strong><?= number_format($total_price, 2, ',', ' ') ?> €</strong> vers le numéro marchand Bankily <strong>BPM-HOTEL-552</strong> (ou au <strong>44 00 11 22</strong>). Prenez une capture d'écran du reçu de confirmation de transfert puis importez-la ci-dessous.";
+                    instructions.innerHTML = "<strong>Instructions Bankily :</strong><br>Veuillez effectuer le transfert de <strong><?= number_format($total_price, 2, ',', ' ') ?> MRU</strong> vers le compte marchand Bankily <strong>007895</strong> (ou au <strong>44 00 11 22</strong>). Prenez une capture d'écran du reçu de confirmation de transfert puis importez-la ci-dessous.";
                 } else if (method === 'sedad') {
-                    instructions.innerHTML = "<strong>Instructions Sedad :</strong><br>Veuillez effectuer le transfert de <strong><?= number_format($total_price, 2, ',', ' ') ?> €</strong> vers le compte marchand Sedad <strong>SEDAD-HOTEL-990</strong>. Prenez une capture d'écran du reçu de transfert puis importez-la ci-dessous.";
+                    instructions.innerHTML = "<strong>Instructions Sedad :</strong><br>Veuillez effectuer le transfert de <strong><?= number_format($total_price, 2, ',', ' ') ?> MRU</strong> vers le compte marchand Sedad <strong>008975</strong>. Prenez une capture d'écran du reçu de transfert puis importez-la ci-dessous.";
                 }
             }
         }
